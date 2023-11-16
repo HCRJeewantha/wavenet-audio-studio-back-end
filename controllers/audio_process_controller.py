@@ -1,7 +1,8 @@
 import speech_recognition as sr
 
 class AudioProcessControllerClass():
-    async def speech_to_text(audio_file_path):
+    
+    async def audio_to_text(audio_file_path):
         recognizer = sr.Recognizer()
 
         # Load the audio file

@@ -11,6 +11,8 @@ from enums.enum_storage import AudioTypes
 from fastapi.responses import StreamingResponse
 from gtts import gTTS
 from fastapi.responses import JSONResponse
+import pyttsx3
+import os
 
 db: Session = next(get_db())
 
@@ -113,21 +115,31 @@ class AudioProcessControllerClass():
                 except sr.RequestError as e:
                     raise HTTPException(status_code=500, detail=f"Google API request failed: {str(e)}")
 
-    async def text_to_audio(self, text):
+    async def text_to_audio(self, text:str, authentication, gender: str = 'male'):
         try:
-            # Create a gTTS object
-            tts = gTTS(text=text, lang='en')
+            engine = pyttsx3.init()
 
-            # Save the audio in-memory as BytesIO
-            audio_stream = BytesIO()
-            tts.write_to_fp(audio_stream)
-            audio_stream.seek(0)
+            # Set the voice gender
+            voices = engine.getProperty('voices')
+            if gender.lower() == 'female':
+                engine.setProperty('voice', voices[1].id)  # Index 1 corresponds to a female voice
+            
+            user_id = authentication.sub
+            unique_code = get_digit_code(4)
+
+            wav_filename = f"{user_id}_{unique_code}_text_to_speech.wav"
+            output_path = f"audio/text_to_audio/{wav_filename}"
+
+            engine.save_to_file(text, output_path)
+            engine.runAndWait()
 
             # Return the audio as a streaming response
-            return StreamingResponse(audio_stream, media_type="audio/mp3")
+            return StreamingResponse(open(output_path, "rb"), media_type="audio/wav", headers={"Content-Disposition": f"attachment; filename={os.path.basename(output_path)}"})
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error converting text to speech: {str(e)}")
+        finally:
+            engine.stop()
         
 
     async def shift_pitch(self, audio_data: bytes, semitones: int, authentication):

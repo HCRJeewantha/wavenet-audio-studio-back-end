@@ -27,22 +27,10 @@ async def login_user(request: LoginUserRequest):
                 }
 
             else:
-                raise HTTPException(
-                    status_code=404,
-                    detail={
-                        "status": False,
-                        "message": "Username or Password Incorrect"
-                    }
-                )
+                raise HTTPException(status_code=404, detail=f"Username or Password Incorrect: {str(e)}")
 
     except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "status": False,
-                "result": str(e)
-            }
-        )
+        raise HTTPException(status_code=404, detail=f"Database Error: {str(e)}")
+        
     finally:
         db.close()

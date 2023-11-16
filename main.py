@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from routes import router
+from routes import AudioRouter, AuthRouter, UserManagerRouter
 from database.sqlite_connection import engine
 from models.sqlite_models import Base
 
@@ -38,7 +38,9 @@ app.add_middleware(
 # Create the tables
 Base.metadata.create_all(bind=engine)
 
-app.include_router(router)
+app.include_router(AudioRouter.router)
+app.include_router(AuthRouter.router)
+app.include_router(UserManagerRouter.router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host='127.0.0.1',

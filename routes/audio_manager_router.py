@@ -8,6 +8,10 @@ router = APIRouter(
     tags=["Audio Manager"],
 )
 
+@router.post("/convert-audio-to-text")
+async def audio_to_text():
+    return {"message": "Hello World"}
+
 
 @router.post("/convert-audio-to-text")
 async def audio_to_text():

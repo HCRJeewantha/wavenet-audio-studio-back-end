@@ -34,6 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Create the tables
 Base.metadata.create_all(bind=engine)
 

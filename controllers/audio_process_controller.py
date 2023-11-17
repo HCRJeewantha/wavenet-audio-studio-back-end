@@ -121,6 +121,10 @@ class AudioProcessControllerClass():
 
             # Set the voice gender
             voices = engine.getProperty('voices')
+
+            # languages = set(voice.languages[0] for voice in voices)
+            # print("Available Languages:", languages)
+
             if gender.lower() == 'female':
                 engine.setProperty('voice', voices[1].id)  # Index 1 corresponds to a female voice
             
@@ -134,7 +138,11 @@ class AudioProcessControllerClass():
             engine.runAndWait()
 
             # Return the audio as a streaming response
-            return StreamingResponse(open(output_path, "rb"), media_type="audio/wav", headers={"Content-Disposition": f"attachment; filename={os.path.basename(output_path)}"})
+            return StreamingResponse(
+            open(output_path, "rb"),
+            media_type="audio/wav",
+            headers={"Content-Disposition": f"attachment; filename={os.path.basename(output_path)}"}
+        )
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error converting text to speech: {str(e)}")

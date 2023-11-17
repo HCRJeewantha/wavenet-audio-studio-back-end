@@ -13,8 +13,6 @@ class User(Base):
     username = Column(TEXT, nullable=True)
     password = deferred(Column(TEXT, nullable=False))
     primary_email = Column(TEXT, unique=True, nullable=False)
-    first_name = Column(TEXT, nullable=False)
-    last_name = Column(TEXT, nullable=False)
 
 class Audio(Timestamp, Base):
     __tablename__ = "audios"

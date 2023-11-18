@@ -1,6 +1,6 @@
 import speech_recognition as sr
 from pydub import AudioSegment
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from io import BytesIO
 import random
 import string
@@ -13,6 +13,7 @@ from gtts import gTTS
 from fastapi.responses import JSONResponse
 import pyttsx3
 import os
+from pathlib import Path
 
 db: Session = next(get_db())
 
@@ -35,6 +36,35 @@ class AudioProcessControllerClass():
             db.commit()
             db.refresh(audio)
 
+            data = {
+                "id": audio.id
+            }
+
+            return JSONResponse({
+                    "status": True,
+                    "message": "Audio has been updated successful",
+                    "result": data
+                })
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+        finally:
+            db.close()
+
+    async def remove_audio_data(self, id):
+        try:
+            audio: Audio = db.query(
+                Audio
+            ).filter(
+                Audio.id ==id
+            ).first()
+
+            file_path = audio.path
+            file_path = Path(file_path)
+            file_path.unlink()
+
+            db.delete(audio)
+            db.commit()
+
             return JSONResponse({
                     "status": True,
                     "message": "Audio has been updated successful",
@@ -44,6 +74,46 @@ class AudioProcessControllerClass():
             raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
         finally:
             db.close()
+
+    async def get_audio(self, authentication):
+        try:
+            user_id = authentication.sub
+
+            audio_list: list[Audio] = db.query(
+                Audio
+            ).filter(
+                Audio.user_id == user_id
+            ).all()
+
+            data = []
+
+            for item in audio_list:
+                audio = {
+                    "id": item.id,
+                    "name": item.name,
+                    "path": item.path,
+                    "type": item.type,
+                    
+                }
+                data.append(audio)
+
+            return JSONResponse({
+                        "status": True,
+                        "message": "Audio list",
+                        "result": data
+                    })
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+        finally:
+            db.close()
+
+    async def get_audio_by_path(self, path, authentication):
+
+        return StreamingResponse(
+            open(path, "rb"),
+            media_type="audio/wav",
+            headers={"Content-Disposition": f"attachment; filename={os.path.basename(path)}"}
+        )
 
     async def audio_preprocess_and_store(self, file, authentication):
         user_id = authentication.sub
@@ -90,14 +160,12 @@ class AudioProcessControllerClass():
         finally:
             db.close()
 
-    async def audio_to_text(self, audio_id):
+    async def audio_to_text(self, file):
         recognizer = sr.Recognizer()
 
-        audio_file: Audio = await self.get_audio_by_id(audio_id)
-
-        if audio_file:
+        if file:
             # Load the audio file
-            audio_file = sr.AudioFile(audio_file.path)
+            audio_file = sr.AudioFile(file)
 
             with audio_file as source:
                 # Adjust for ambient noise
@@ -109,7 +177,12 @@ class AudioProcessControllerClass():
                 try:
                     # Use the recognizer to convert speech to text
                     text = recognizer.recognize_google(audio)
-                    return text
+
+                    return JSONResponse({
+                    "status": True,
+                    "message": "Audio to text conversion successful",
+                    "result": text
+                    })
                 except sr.UnknownValueError:
                     raise HTTPException(status_code=500, detail=f"Could not understand audio: {str(e)}")
                 except sr.RequestError as e:
@@ -166,5 +239,30 @@ class AudioProcessControllerClass():
 
         # save audio path in db
         return await self.save_audio_data(wav_filename, wav_path, AudioTypes.Modified, user_id)
+    
+    async def save_audio(self, type, file: UploadFile, authentication):
+        user_id = authentication.sub
+        unique_code = get_digit_code(4)
+
+        wav_filename = f"{user_id}_{unique_code}_upload.wav"
+        try:
+            if type == 1:
+                wav_path = f"audio/uploads/{wav_filename}"
+            if type == 2:
+                wav_path = f"audio/text_to_audio/{wav_filename}"
+            if type == 3:
+                wav_path = f"audio/shift_pitch/{wav_filename}"
+                
+            with open(wav_path, "wb") as audio_file:
+                audio_file.write(file.file.read())
+
+            return  await self.save_audio_data(wav_filename, wav_path, type, user_id)
+            
+
+        except Exception as e:
+            raise e
+        
+
+
 
 audioProcessController = AudioProcessControllerClass()

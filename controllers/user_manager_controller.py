@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from services.hash_password import hash_password
 from sqlalchemy.exc import IntegrityError
 from fastapi.encoders import jsonable_encoder 
+from services.jwt_auth import create_token
 
 db: Session = next(get_db())
 
@@ -24,14 +25,14 @@ async def create_user(request: CreateUserRequest):
         return JSONResponse({
                 "status": True,
                 "message": "User has been created successful",
-                "result": jsonable_encoder(user)
+                "result": jsonable_encoder(user),
+                "token": create_token(user)
             })
     
     except IntegrityError as e:
         error_info = str(e.orig)
         if "already exists" in error_info:
             raise HTTPException(status_code=422, detail=f"Data Exists: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
     finally:
         db.close()
                     

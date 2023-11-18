@@ -238,7 +238,13 @@ class AudioProcessControllerClass():
         shifted.export(wav_path, format="wav")
 
         # save audio path in db
-        return await self.save_audio_data(wav_filename, wav_path, AudioTypes.Modified, user_id)
+        await self.save_audio_data(wav_filename, wav_path, AudioTypes.Modified, user_id)
+
+        return StreamingResponse(
+            open(wav_path, "rb"),
+            media_type="audio/wav",
+            headers={"Content-Disposition": f"attachment; filename={os.path.basename(wav_path)}"}
+        )
     
     async def save_audio(self, type, file: UploadFile, authentication):
         user_id = authentication.sub

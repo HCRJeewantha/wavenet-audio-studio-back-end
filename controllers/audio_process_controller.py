@@ -238,7 +238,7 @@ class AudioProcessControllerClass():
         shifted.export(wav_path, format="wav")
 
         # save audio path in db
-        await self.save_audio_data(wav_filename, wav_path, AudioTypes.Modified, user_id)
+        # await self.save_audio_data(wav_filename, wav_path, AudioTypes.Modified, user_id)
 
         return StreamingResponse(
             open(wav_path, "rb"),

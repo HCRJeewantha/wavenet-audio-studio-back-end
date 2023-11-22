@@ -23,16 +23,21 @@ async def create_user(request: CreateUserRequest):
         db.refresh(user)
 
         return JSONResponse({
-                "status": True,
-                "message": "User has been created successful",
-                "result": jsonable_encoder(user),
-                "token": create_token(user)
-            })
-    
+            "status": True,
+            "message": "User has been created successfully",
+            "result": jsonable_encoder(user),
+            "token": create_token(user)
+        })
+
     except IntegrityError as e:
+        # Extract the error message for better clarity
         error_info = str(e.orig)
-        if "already exists" in error_info:
-            raise HTTPException(status_code=422, detail=f"Data Exists: {str(e)}")
+        print(e)
+        if "unique constraint" in error_info.lower():
+            # Using a 422 status code for Unprocessable Entity
+            raise HTTPException(status_code=422, detail="Email is already exists")
+
     finally:
+        # Ensure the database connection is closed
         db.close()
                     
